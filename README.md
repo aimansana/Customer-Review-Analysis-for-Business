@@ -6,4 +6,3 @@ data collection technique- scrapping using selenium w chromedriver, because goog
 
 
 aiman sana
-123
