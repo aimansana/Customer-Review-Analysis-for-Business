@@ -1,49 +1,23 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-import time, pandas as pd
+import time
 
-options = Options()
-options.add_argument("--start-maximized")
+# Setup driver
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
-
-url = "https://www.google.com/maps/place/Domino's+Pizza/@12.9716,77.5946,17z"
+url = "https://www.google.com/maps/place/Meghana+Foods+-+Marathahalli/@12.9496268,77.6971488,17z/data=!4m18!1m9!3m8!1s0x3bae12335ccf1b9d:0xa3365bee1a2d62ed!2sMeghana+Foods+-+Marathahalli!8m2!3d12.9496216!4d77.6997237!9m1!1b1!16s%2Fg%2F11b5pjcvm4!3m7!1s0x3bae12335ccf1b9d:0xa3365bee1a2d62ed!8m2!3d12.9496216!4d77.6997237!9m1!1b1!16s%2Fg%2F11b5pjcvm4?entry=ttu&g_ep=EgoyMDI1MDkwNy4wIKXMDSoASAFQAw%3D%3D"
 driver.get(url)
+time.sleep(5)  # let page load
 
-# wait for "All reviews" button
-wait = WebDriverWait(driver, 10)
-all_reviews_button = wait.until(
-    EC.element_to_be_clickable((By.XPATH, '//button[contains(@jsaction,"pane.reviewChart.moreReviews")]'))
-)
-all_reviews_button.click()
-time.sleep(3)
+try:
+    # Find the Reviews button by visible text
+    reviews_button = driver.find_element(By.XPATH, '//div[contains(text(),"Reviews")]')
+    reviews_button.click()
+    print("✅ Clicked on Reviews button")
+except Exception as e:
+    print("⚠️ Could not click Reviews button:", e)
 
-# scroll container
-scrollable_div = driver.find_element(By.XPATH, '//div[@class="m6QErb DxyBCb kA9KIf dS8AEf"]')
-
-for _ in range(10):
-    driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
-    time.sleep(2)
-
-reviews = driver.find_elements(By.CLASS_NAME, "wiI7pd")
-ratings = driver.find_elements(By.CLASS_NAME, "kvMYJc")
-
-data = []
-for r, s in zip(reviews, ratings):
-    data.append({
-        "rating": int(s.get_attribute("aria-label")[0]),
-        "review": r.text.strip()
-    })
-
-df = pd.DataFrame(data)
-df.to_csv("google_reviews.csv", index=False, encoding="utf-8-sig")
-print(f"✅ Scraped {len(df)} reviews")
+time.sleep(5)
 driver.quit()
