@@ -1,53 +1,56 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
 
-# Launch browser
-driver = webdriver.Chrome(ChromeDriverManager().install())
+# --- Setup Chrome Driver ---
+options = Options()
+options.add_argument("--start-maximized")  # open full screen
+options.add_argument("--disable-blink-features=AutomationControlled")  # avoid bot detection
 
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=options
+)
+
+# --- Replace this with your restaurant Google Maps link ---
 url = "https://www.google.com/maps/place/Domino's+Pizza/@12.9716,77.5946,17z"
 driver.get(url)
 time.sleep(5)
 
-# Open All Reviews
-all_reviews_button = driver.find_element(By.XPATH, '//button[contains(text(),"reviews")]')
-all_reviews_button.click()
-time.sleep(5)
+# --- Click "All Reviews" button ---
+try:
+    all_reviews_button = driver.find_element(By.XPATH, '//button[contains(@aria-label,"reviews")]')
+    all_reviews_button.click()
+    time.sleep(5)
+except:
+    print("⚠️ Could not find the All Reviews button")
+    driver.quit()
 
-# Sort reviews by "Newest"
-sort_button = driver.find_element(By.XPATH, '//button[@aria-label="Sort reviews"]')
-sort_button.click()
-time.sleep(2)
-newest_button = driver.find_element(By.XPATH, '//div[@role="menuitem" and contains(text(),"Newest")]')
-newest_button.click()
-time.sleep(3)
+# --- Scroll to load more reviews ---
+scrollable_div = driver.find_element(By.XPATH, '//div[@class="m6QErb DxyBCb kA9KIf dS8AEf"]')
 
-# Scroll to load reviews
-for _ in range(10):
-    scrollable_div = driver.find_element(By.XPATH, '//div[@class="m6QErb DxyBCb kA9KIf dS8AEf"]')
-    driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_div)
+for _ in range(15):  # adjust for more/less reviews
+    driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
     time.sleep(2)
 
-# Extract fields
-reviews = driver.find_elements(By.CLASS_NAME, "wiI7pd")   # review text
+# --- Extract Reviews ---
+reviews = driver.find_elements(By.CLASS_NAME, "wiI7pd")   # review texts
 ratings = driver.find_elements(By.CLASS_NAME, "kvMYJc")   # star ratings
-dates = driver.find_elements(By.CLASS_NAME, "rsqaWe")     # review date (e.g., "2 weeks ago")
-likes = driver.find_elements(By.CLASS_NAME, "GBkF3d")     # number of likes (can be blank)
 
 data = []
-for r, s, d, l in zip(reviews, ratings, dates, likes):
-    likes_count = l.text if l.text != "" else "0"  # blank means 0 likes
-    data.append({
-        "review": r.text,
-        "rating": int(s.get_attribute("aria-label")[0]),  # "5 stars" → 5
-        "date": d.text,
-        "likes": int(likes_count)
-    })
+for r, s in zip(reviews, ratings):
+    review_text = r.text.strip()
+    rating_value = int(s.get_attribute("aria-label")[0])  # e.g. "5 stars" → 5
+    data.append({"rating": rating_value, "review": review_text})
 
-# Save to CSV
+# --- Save to CSV ---
 df = pd.DataFrame(data)
-df.to_csv("google_latest_reviews.csv", index=False, encoding="utf-8-sig")
+df.to_csv("google_reviews.csv", index=False, encoding="utf-8-sig")
+
+print(f"✅ Scraped {len(df)} reviews and saved to google_reviews.csv")
 
 driver.quit()
