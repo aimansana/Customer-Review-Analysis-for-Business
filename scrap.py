@@ -27,7 +27,7 @@ for i in range(10):  # Increase for more reviews
     driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
     time.sleep(2)
 
-# Extract reviews
+# Extract reviews 
 reviews = driver.find_elements(By.XPATH, '//span[@class="wiI7pd"]')
 
 data = []
@@ -46,6 +46,6 @@ with open("reviews.csv", "w", newline="", encoding="utf-8") as f:
     writer.writerow(["ID", "Rating", "Date", "Review"])
     writer.writerows(data)
 
-print(f"✅ Saved {len(data)} reviews into google_reviews.csv")
+print(f"✅ Saved {len(data)} reviews into reviews.csv")
 
 driver.quit()
