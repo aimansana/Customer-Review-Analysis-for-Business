@@ -8,14 +8,17 @@ df = pd.read_csv('C:/Users/Habbeeba/Projects/Customer-Review-Analysis-for-Busine
 
 # Remove specific columns by name
 #columns_to_remove = ['Author Profile','Author Image','Review URL']
-"""columns_to_remove = ['Photos','Author Profile','Author Image','Review URL','Owner Answer','Owner Answer Date']
+columns_to_remove = ['Photos','Author Profile','Author Image','Review URL','Owner Answer','Owner Answer Date']
 df = df.drop(columns=columns_to_remove)
 
 # Remove duplicates based on Review Date, Review Text, and Author
 df = df.drop_duplicates(
     subset=['Date', 'Review Text', 'Author'],  # Replace with actual column names
     keep='first'  # Keep the first occurrence of duplicates
-)"""
+)
+
+#remove html tags from review text 
+df['Review Text'] = df['Review Text'].str.replace(r'<.*?>', '', regex=True)
 
 #column without stopwords
 nltk.download('stopwords')
@@ -27,6 +30,7 @@ def remove_stopwords(text):
         return ' '.join(filtered_words)
     return text
 df['Cleaned Review Text'] = df['Review Text'].apply(remove_stopwords)
+
 # Function to clean text
 def clean_text(text):
     if isinstance(text, str):
